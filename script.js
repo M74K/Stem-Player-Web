@@ -1,22 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     let songs = [];
     let currentMenuSongIndex = -1;
     let playingSongIndex = -1;
     let isPlaying = false;
-    let currentPosition = 0; 
+    let currentPosition = 0;
     let playStartTime = 0;
     let playStartOffset = 0;
 
-    
+
     let scannerPhase = 0;
     let lastProgressTime = 0;
 
-    
+
     let colorInner = '#a855f7';
     let colorOuter = '#f97316';
 
-    
+
     let isLoopMode = false;
     let isLoopActive = false;
     let loopStartTime = 0;
@@ -24,32 +24,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSpeed = 1.0;
     let isReverse = false;
     let savedTrackVolumes = { vocal: 1, drums: 1, bass: 1, music: 1 };
-    
-    
+
+
     let loopModeInitialSpeed = 1.0;
     let loopModeInitialReverse = false;
     let loopModeInitialLoopActive = false;
-    
-    
+
+
     let savedLoopSpeed = 1.0;
     let savedLoopReverse = false;
     let savedLoopActive = false;
+    let savedLoopLengthBeats = 8;
 
-    
+
     let masterVolume = 1.0;
     let volumeTimeout = null;
 
-    
+
     let soloTrack = null;
 
-    
+
     let audioCtx = null;
     let masterGainNode = null;
 
     const tracks = {
         vocal: { source: null, gainNode: null, analyserNode: null, buffer: null, reversedBuffer: null, volume: 1.0 },
         drums: { source: null, gainNode: null, analyserNode: null, buffer: null, reversedBuffer: null, volume: 1.0 },
-        bass:  { source: null, gainNode: null, analyserNode: null, buffer: null, reversedBuffer: null, volume: 1.0 },
+        bass: { source: null, gainNode: null, analyserNode: null, buffer: null, reversedBuffer: null, volume: 1.0 },
         music: { source: null, gainNode: null, analyserNode: null, buffer: null, reversedBuffer: null, volume: 1.0 }
     };
 
@@ -63,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.keys(tracks).forEach(name => {
             const gainNode = audioCtx.createGain();
             const analyserNode = audioCtx.createAnalyser();
-            analyserNode.fftSize = 32; 
+            analyserNode.fftSize = 32;
 
             gainNode.connect(analyserNode);
             analyserNode.connect(masterGainNode);
@@ -78,56 +79,56 @@ document.addEventListener('DOMContentLoaded', () => {
         return audioCtx;
     };
 
-    
+
     const playerContainer = document.querySelector('.player-container');
-    const grooves         = document.querySelectorAll('.groove');
-    const modalOverlay    = document.getElementById('modal-overlay');
-    const btnMenu         = document.getElementById('btn-menu');
-    const btnCloseModal   = document.getElementById('btn-close-modal');
-    const btnAddSong      = document.getElementById('btn-add-song');
-    const songList        = document.getElementById('song-list');
-    const centerPlayArea  = document.getElementById('center-play-area');
+    const grooves = document.querySelectorAll('.groove');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const btnMenu = document.getElementById('btn-menu');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+    const btnAddSong = document.getElementById('btn-add-song');
+    const songList = document.getElementById('song-list');
+    const centerPlayArea = document.getElementById('center-play-area');
     const currentSongTitle = document.getElementById('current-song-title');
-    const currentSongBpm  = document.getElementById('current-song-bpm');
-    const btnPlay         = document.getElementById('btn-play');
-    const btnPrev         = document.getElementById('btn-prev');
-    const btnNext         = document.getElementById('btn-next');
-    const timeCurrent     = document.getElementById('time-current');
-    const timeTotal       = document.getElementById('time-total');
-    const progressBarBg   = document.getElementById('progress-bar-bg');
+    const currentSongBpm = document.getElementById('current-song-bpm');
+    const btnPlay = document.getElementById('btn-play');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const timeCurrent = document.getElementById('time-current');
+    const timeTotal = document.getElementById('time-total');
+    const progressBarBg = document.getElementById('progress-bar-bg');
     const progressBarFill = document.getElementById('progress-bar-fill');
-    const promptOverlay   = document.getElementById('prompt-overlay');
-    const btnClosePrompt  = document.getElementById('btn-close-prompt');
-    const promptInput     = document.getElementById('prompt-input');
-    const bpmValue        = document.getElementById('bpm-value');
-    const btnDetectBpm    = document.getElementById('btn-detect-bpm');
+    const promptOverlay = document.getElementById('prompt-overlay');
+    const btnClosePrompt = document.getElementById('btn-close-prompt');
+    const promptInput = document.getElementById('prompt-input');
+    const bpmValue = document.getElementById('bpm-value');
+    const btnDetectBpm = document.getElementById('btn-detect-bpm');
     const colorInnerInput = document.getElementById('color-inner');
     const colorOuterInput = document.getElementById('color-outer');
-    const swatchInner     = document.getElementById('swatch-inner');
-    const swatchOuter     = document.getElementById('swatch-outer');
+    const swatchInner = document.getElementById('swatch-inner');
+    const swatchOuter = document.getElementById('swatch-outer');
     const gradientPreview = document.getElementById('color-gradient-preview');
 
-    
-    const btnLoopMode     = document.getElementById('btn-loop-mode');
-    const btnVolMinus     = document.getElementById('btn-vol-minus');
-    const btnVolPlus      = document.getElementById('btn-vol-plus');
-    const btnTrackPrev    = document.getElementById('btn-track-prev');
-    const btnTrackNext    = document.getElementById('btn-track-next');
+
+    const btnLoopMode = document.getElementById('btn-loop-mode');
+    const btnVolMinus = document.getElementById('btn-vol-minus');
+    const btnVolPlus = document.getElementById('btn-vol-plus');
+    const btnTrackPrev = document.getElementById('btn-track-prev');
+    const btnTrackNext = document.getElementById('btn-track-next');
 
     const fileInputs = {
         vocal: document.getElementById('file-vocal'),
         drums: document.getElementById('file-drums'),
-        bass:  document.getElementById('file-bass'),
+        bass: document.getElementById('file-bass'),
         music: document.getElementById('file-music')
     };
     const fileLabels = {
         vocal: document.getElementById('label-vocal'),
         drums: document.getElementById('label-drums'),
-        bass:  document.getElementById('label-bass'),
+        bass: document.getElementById('label-bass'),
         music: document.getElementById('label-music')
     };
 
-    
+
     const hexToRgb = (hex) => {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
@@ -141,13 +142,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const r = Math.round(a.r + (b.r - a.r) * t);
         const g = Math.round(a.g + (b.g - a.g) * t);
         const bl = Math.round(a.b + (b.b - a.b) * t);
-        return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${bl.toString(16).padStart(2,'0')}`;
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bl.toString(16).padStart(2, '0')}`;
     };
 
     const getPalette = () => [
         colorInner,
-        lerpColor(colorInner, colorOuter, 1/3),
-        lerpColor(colorInner, colorOuter, 2/3),
+        lerpColor(colorInner, colorOuter, 1 / 3),
+        lerpColor(colorInner, colorOuter, 2 / 3),
         colorOuter
     ];
 
@@ -167,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             groove.querySelectorAll('.dot').forEach(dot => {
                 const idx = parseInt(dot.getAttribute('data-index'));
                 const color = palette[idx];
-                const rgb   = hexToRgb(color);
+                const rgb = hexToRgb(color);
                 dot.style.backgroundColor = color;
                 dot.style.boxShadow = `0 0 24px 8px rgba(${rgb.r},${rgb.g},${rgb.b},0.8)`;
             });
@@ -193,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    
+
     const getSongDuration = () => {
         let maxDur = 0;
         Object.keys(tracks).forEach(name => {
@@ -249,11 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const getTrackAmplitude = (name) => {
         const t = tracks[name];
         if (!t.analyserNode || !isPlaying) return 0;
-        
+
         const bufferLength = t.analyserNode.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         t.analyserNode.getByteTimeDomainData(dataArray);
-        
+
         let sum = 0;
         for (let i = 0; i < bufferLength; i++) {
             const val = (dataArray[i] - 128) / 128;
@@ -280,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.keys(tracks).forEach(name => {
             const t = tracks[name];
             if (t.source) {
-                try { t.source.stop(); } catch(e) {}
+                try { t.source.stop(); } catch (e) { }
                 t.source = null;
             }
 
@@ -334,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.keys(tracks).forEach(name => {
             const t = tracks[name];
             if (t.source) {
-                try { t.source.stop(); } catch(e) {}
+                try { t.source.stop(); } catch (e) { }
                 t.source = null;
             }
         });
@@ -406,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    
+
     const reverseBuffer = (buffer, audioCtx) => {
         const numChannels = buffer.numberOfChannels;
         const length = buffer.length;
@@ -422,30 +423,30 @@ document.addEventListener('DOMContentLoaded', () => {
         return reversed;
     };
 
-    
+
     const getVerticalDotsBottomToTop = () => {
         const grooveTop = document.querySelector('.groove-vertical.groove-top');
         const grooveBottom = document.querySelector('.groove-vertical.groove-bottom');
-        
+
         const bottomDots = Array.from(grooveBottom.querySelectorAll('.dot'))
             .sort((a, b) => parseInt(b.getAttribute('data-index')) - parseInt(a.getAttribute('data-index')));
-            
+
         const topDots = Array.from(grooveTop.querySelectorAll('.dot'))
             .sort((a, b) => parseInt(a.getAttribute('data-index')) - parseInt(b.getAttribute('data-index')));
-            
+
         return [...bottomDots, ...topDots];
     };
 
     const getHorizontalDotsLeftToRight = () => {
         const grooveLeft = document.querySelector('.groove-left');
         const grooveRight = document.querySelector('.groove-right');
-        
+
         const leftDots = Array.from(grooveLeft.querySelectorAll('.dot'))
             .sort((a, b) => parseInt(b.getAttribute('data-index')) - parseInt(a.getAttribute('data-index')));
-            
+
         const rightDots = Array.from(grooveRight.querySelectorAll('.dot'))
             .sort((a, b) => parseInt(a.getAttribute('data-index')) - parseInt(b.getAttribute('data-index')));
-            
+
         return [...leftDots, ...rightDots];
     };
 
@@ -453,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const verticalDots = getVerticalDotsBottomToTop();
         let minDistance = Infinity;
         let closestIdx = -1;
-        
+
         verticalDots.forEach((dot, idx) => {
             const rect = dot.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
@@ -467,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return closestIdx;
     };
 
-    
+
     const renderGroovesInLoopMode = () => {
         let speedIdx = 1;
         if (Math.abs(currentSpeed - 0.85) < 0.01) speedIdx = 0;
@@ -475,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (Math.abs(currentSpeed - 1.15) < 0.01) speedIdx = 2;
         else if (Math.abs(currentSpeed - 1.3) < 0.01) speedIdx = 3;
 
-        
+
         let activeVerticalDots = 8;
         if (isLoopActive) {
             if (loopLengthBeats === 0.25) activeVerticalDots = 1;
@@ -491,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const verticalDots = getVerticalDotsBottomToTop();
         verticalDots.forEach((dot, idx) => {
-            dot.style.filter = ''; 
+            dot.style.filter = '';
             if (idx < activeVerticalDots) {
                 dot.classList.remove('off');
             } else {
@@ -499,11 +500,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        
+
         const rightGroove = document.querySelector('.groove-right');
         const rightDots = rightGroove.querySelectorAll('.dot');
         rightDots.forEach(dot => {
-            dot.style.filter = ''; 
+            dot.style.filter = '';
             const idx = parseInt(dot.getAttribute('data-index'));
             if (!isReverse && idx === speedIdx) {
                 dot.classList.remove('off');
@@ -512,11 +513,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        
+
         const leftGroove = document.querySelector('.groove-left');
         const leftDots = leftGroove.querySelectorAll('.dot');
         leftDots.forEach(dot => {
-            dot.style.filter = ''; 
+            dot.style.filter = '';
             const idx = parseInt(dot.getAttribute('data-index'));
             if (isReverse && idx === speedIdx) {
                 dot.classList.remove('off');
@@ -526,13 +527,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    
+
     const showVolumeIndicator = () => {
         if (volumeTimeout) {
             clearTimeout(volumeTimeout);
         }
 
-        
+
         document.querySelectorAll('.dot').forEach(dot => {
             dot.style.filter = '';
             dot.classList.remove('volume-active');
@@ -566,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    
+
     grooves.forEach(groove => {
         let isPointerDown = false;
         const trackName = groove.getAttribute('data-track');
@@ -580,8 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 dots.forEach(dot => {
                     const rect = dot.getBoundingClientRect();
-                    const cx = rect.left + rect.width  / 2;
-                    const cy = rect.top  + rect.height / 2;
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
                     const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
                     if (dist < minDistance) {
                         minDistance = dist;
@@ -593,21 +594,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     dots.forEach(dot => {
                         const idx = parseInt(dot.getAttribute('data-index'));
                         if (idx <= closestIndex) dot.classList.remove('off');
-                        else                     dot.classList.add('off');
+                        else dot.classList.add('off');
                     });
                     tracks[trackName].volume = closestIndex / 3;
                     applyGains();
                 }
             } else {
-                
+
                 if (trackName === 'drums' || trackName === 'music') {
                     const dots = Array.from(groove.querySelectorAll('.dot'));
                     let minDistance = Infinity;
                     let closestIndex = -1;
                     dots.forEach(dot => {
                         const rect = dot.getBoundingClientRect();
-                        const cx = rect.left + rect.width  / 2;
-                        const cy = rect.top  + rect.height / 2;
+                        const cx = rect.left + rect.width / 2;
+                        const cy = rect.top + rect.height / 2;
                         const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
                         if (dist < minDistance) {
                             minDistance = dist;
@@ -619,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (trackName === 'drums') {
                             currentSpeed = getSpeedFromIndex(closestIndex);
                             isReverse = false;
-                            
+
                             const curPos = getCurrentPlaybackPosition();
                             if (isPlaying) {
                                 stopSources();
@@ -633,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             currentSpeed = getSpeedFromIndex(closestIndex);
                             isReverse = true;
-                            
+
                             const curPos = getCurrentPlaybackPosition();
                             if (isPlaying) {
                                 stopSources();
@@ -672,9 +673,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             isLoopActive = true;
                         } else {
                             loopLengthBeats = 8;
-                            isLoopActive = false; 
+                            isLoopActive = false;
                         }
-                        
+
                         const curPos = getCurrentPlaybackPosition();
                         loopStartTime = curPos;
 
@@ -708,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         groove.addEventListener('pointermove', (e) => { if (isPointerDown) updateVolume(e); });
-        
+
         const release = (e) => {
             if (soloTimeout) {
                 clearTimeout(soloTimeout);
@@ -716,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (isPointerDown) {
                 isPointerDown = false;
-                try { groove.releasePointerCapture(e.pointerId); } catch(err) {}
+                try { groove.releasePointerCapture(e.pointerId); } catch (err) { }
                 if (soloTrack === trackName) {
                     soloTrack = null;
                     playerContainer.classList.remove('solo-active');
@@ -725,19 +726,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         };
-        groove.addEventListener('pointerup',     release);
+        groove.addEventListener('pointerup', release);
         groove.addEventListener('pointercancel', release);
-        groove.addEventListener('pointerleave',  release);
+        groove.addEventListener('pointerleave', release);
     });
 
-    
+
     const loadSongToPlayer = (index) => {
         if (index < 0 || index >= songs.length) return;
         const song = songs[index];
         playingSongIndex = index;
         currentSongTitle.textContent = song.name;
 
-        
+
         if (song.colorInner) { colorInner = song.colorInner; colorInnerInput.value = colorInner; swatchInner.style.backgroundColor = colorInner; }
         if (song.colorOuter) { colorOuter = song.colorOuter; colorOuterInput.value = colorOuter; swatchOuter.style.backgroundColor = colorOuter; }
         applyDotColors();
@@ -746,18 +747,18 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPosition = 0;
         isLoopActive = false;
 
-        
+
         Object.keys(tracks).forEach(name => {
             tracks[name].buffer = song.buffers[name] || null;
             tracks[name].reversedBuffer = song.reversedBuffers[name] || null;
-            
-            
+
+
             const groove = document.querySelector(`.groove[data-track="${name}"]`);
             const dots = groove.querySelectorAll('.dot');
             const volVal = tracks[name].volume;
             const activeIdx = Math.round(volVal * 3);
             dots.forEach(dot => {
-                dot.style.filter = ''; 
+                dot.style.filter = '';
                 const idx = parseInt(dot.getAttribute('data-index'));
                 if (idx <= activeIdx) dot.classList.remove('off');
                 else dot.classList.add('off');
@@ -788,35 +789,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const togglePlayback = (fromCenterPlay = false) => {
         if (playingSongIndex === -1) return;
-        
-        
+
+
         if (isLoopMode && fromCenterPlay) {
-            
-            const hasChanges = (currentSpeed !== loopModeInitialSpeed) || 
-                             (isReverse !== loopModeInitialReverse) || 
-                             (isLoopActive !== loopModeInitialLoopActive);
-            
+
+            const hasChanges = (currentSpeed !== loopModeInitialSpeed) ||
+                (isReverse !== loopModeInitialReverse) ||
+                (isLoopActive !== loopModeInitialLoopActive);
+
             if (!hasChanges) {
-                
+
                 isLoopMode = false;
                 btnLoopMode.classList.remove('active');
 
-                
+
                 document.querySelectorAll('.dot.playback-pointer').forEach(dot => {
                     dot.classList.remove('playback-pointer');
                     dot.style.filter = '';
                 });
 
-                
+
                 document.querySelectorAll('.dot').forEach(dot => {
                     dot.classList.remove('loop-active');
                     dot.style.filter = '';
                 });
 
-                
+
                 Object.keys(tracks).forEach(name => {
                     tracks[name].volume = savedTrackVolumes[name];
-                    
+
                     const groove = document.querySelector(`.groove[data-track="${name}"]`);
                     const dots = groove.querySelectorAll('.dot');
                     const activeIdx = Math.round(tracks[name].volume * 3);
@@ -830,15 +831,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 applyGains();
                 return;
             } else {
-                
+
                 currentSpeed = 1.0;
                 isReverse = false;
-                isLoopActive = false; 
+                isLoopActive = false;
                 loopLengthBeats = 8;
+                savedLoopLengthBeats = 8;
                 loopModeInitialSpeed = 1.0;
                 loopModeInitialReverse = false;
                 loopModeInitialLoopActive = false;
-                
+
                 const curPos = getCurrentPlaybackPosition();
                 if (isPlaying) {
                     stopSources();
@@ -853,15 +855,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        
+
         if (isPlaying) pauseAll();
         else playAll();
     };
 
-    
+
     btnPlay.addEventListener('click', () => togglePlayback(false));
-    
-    
+
+
     centerPlayArea.addEventListener('click', () => togglePlayback(true));
 
     const prevSong = () => {
@@ -879,17 +881,17 @@ document.addEventListener('DOMContentLoaded', () => {
     btnPrev.addEventListener('click', prevSong);
     btnNext.addEventListener('click', nextSong);
 
-    
+
     btnTrackPrev.addEventListener('click', prevSong);
     btnTrackNext.addEventListener('click', nextSong);
 
-    
+
     btnLoopMode.addEventListener('click', () => {
         initAudioContext();
         isLoopMode = !isLoopMode;
 
         if (isLoopMode) {
-            
+
             if (volumeTimeout) {
                 clearTimeout(volumeTimeout);
                 volumeTimeout = null;
@@ -901,40 +903,39 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             btnLoopMode.classList.add('active');
-            
-            
-            
+
+
+
             savedTrackVolumes = {
                 vocal: tracks.vocal.volume,
                 drums: tracks.drums.volume,
-                bass:  tracks.bass.volume,
+                bass: tracks.bass.volume,
                 music: tracks.music.volume
             };
 
-            
+
             document.querySelectorAll('.dot').forEach(dot => {
-                dot.style.filter = ''; 
+                dot.style.filter = '';
                 dot.classList.add('loop-active');
             });
 
-            isLoopActive = false; 
-            loopLengthBeats = 8;
-            currentSpeed = savedLoopSpeed; 
+            currentSpeed = savedLoopSpeed;
             isReverse = savedLoopReverse;
             isLoopActive = savedLoopActive;
-            
-            
+            loopLengthBeats = savedLoopLengthBeats;
+
+
             loopModeInitialSpeed = savedLoopSpeed;
             loopModeInitialReverse = savedLoopReverse;
             loopModeInitialLoopActive = savedLoopActive;
-            
+
             scannerPhase = 0;
             loopStartTime = getCurrentPlaybackPosition();
 
-            
+
             renderGroovesInLoopMode();
 
-            
+
             const curPos = getCurrentPlaybackPosition();
             if (isPlaying) {
                 stopSources();
@@ -944,29 +945,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentPosition = curPos;
             }
         } else {
-            
+
             savedLoopSpeed = currentSpeed;
             savedLoopReverse = isReverse;
             savedLoopActive = isLoopActive;
-            
+            savedLoopLengthBeats = loopLengthBeats;
+
             btnLoopMode.classList.remove('active');
 
-            
+
             document.querySelectorAll('.dot.playback-pointer').forEach(dot => {
                 dot.classList.remove('playback-pointer');
                 dot.style.filter = '';
             });
 
-            
+
             document.querySelectorAll('.dot').forEach(dot => {
                 dot.classList.remove('loop-active');
                 dot.style.filter = '';
             });
 
-            
+
             Object.keys(tracks).forEach(name => {
                 tracks[name].volume = savedTrackVolumes[name];
-                
+
                 const groove = document.querySelector(`.groove[data-track="${name}"]`);
                 const dots = groove.querySelectorAll('.dot');
                 const activeIdx = Math.round(tracks[name].volume * 3);
@@ -981,9 +983,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    
+
     const adjustVolume = (delta) => {
-        if (isLoopMode) return; 
+        if (isLoopMode) return;
         initAudioContext();
 
         masterVolume = Math.max(0.0, Math.min(1.0, masterVolume + delta));
@@ -997,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnVolMinus.addEventListener('click', () => adjustVolume(-0.125));
     btnVolPlus.addEventListener('click', () => adjustVolume(0.125));
 
-    
+
     const fmt = (s) => {
         if (isNaN(s)) return '0:00';
         return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`;
@@ -1011,13 +1013,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const pos = getCurrentPlaybackPosition();
         const duration = getSongDuration();
-        
+
         if (duration > 0) {
             timeCurrent.textContent = fmt(pos);
-            timeTotal.textContent   = fmt(duration);
+            timeTotal.textContent = fmt(duration);
             progressBarFill.style.width = `${(pos / duration) * 100}%`;
-            
-            
+
+
             if (isLoopMode && isPlaying) {
                 if (isReverse) {
                     scannerPhase -= deltaSec;
@@ -1032,36 +1034,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            
+
             if (!isLoopMode && !playerContainer.classList.contains('volume-indicator-active')) {
                 Object.keys(tracks).forEach(name => {
                     const groove = document.querySelector(`.groove[data-track="${name}"]`);
                     if (!groove) return;
                     const dots = groove.querySelectorAll('.dot');
-                    
+
                     const activeIdx = Math.round(tracks[name].volume * 3);
                     const rms = getTrackAmplitude(name);
-                    
-                    
-                    
+
+
+
                     let litDotsCount = 1;
                     if (isPlaying) {
-                        litDotsCount = 1 + Math.floor(rms * 10); 
+                        litDotsCount = 1 + Math.floor(rms * 10);
                         litDotsCount = Math.min(4, Math.max(1, litDotsCount));
                     }
 
                     dots.forEach(dot => {
                         const idx = parseInt(dot.getAttribute('data-index'));
                         if (idx < litDotsCount) {
-                            
+
                             dot.classList.remove('off');
                             dot.style.filter = `blur(2px) brightness(1.5)`;
                         } else if (idx <= activeIdx) {
-                            
+
                             dot.classList.remove('off');
                             dot.style.filter = `blur(2px) brightness(1.0)`;
                         } else {
-                            
+
                             dot.classList.add('off');
                             dot.style.filter = '';
                         }
@@ -1069,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            
+
             if (isLoopMode) {
                 document.querySelectorAll('.dot.playback-pointer').forEach(dot => {
                     dot.classList.remove('playback-pointer');
@@ -1089,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             timeCurrent.textContent = '0:00';
-            timeTotal.textContent   = '0:00';
+            timeTotal.textContent = '0:00';
             progressBarFill.style.width = '0%';
         }
         requestAnimationFrame(updateProgress);
@@ -1118,7 +1120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    
+
     const estimateBpm = async (audioBuffer) => {
         const sampleRate = audioBuffer.sampleRate;
         const numChannels = audioBuffer.numberOfChannels;
@@ -1130,10 +1132,10 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 0; i < length; i++) mono[i] += ch[i] / numChannels;
         }
 
-        const windowSize = Math.floor(sampleRate * 0.01); 
-        const hopSize    = windowSize;
-        const frames     = Math.floor(length / hopSize);
-        const envelope   = new Float32Array(frames);
+        const windowSize = Math.floor(sampleRate * 0.01);
+        const hopSize = windowSize;
+        const frames = Math.floor(length / hopSize);
+        const envelope = new Float32Array(frames);
         for (let f = 0; f < frames; f++) {
             let sum = 0;
             const start = f * hopSize;
@@ -1143,14 +1145,14 @@ document.addEventListener('DOMContentLoaded', () => {
             envelope[f] = Math.sqrt(sum / windowSize);
         }
 
-        const frameRate = sampleRate / hopSize; 
+        const frameRate = sampleRate / hopSize;
         const minBPM = 60, maxBPM = 200;
-        const minLag  = Math.floor(frameRate * 60 / maxBPM);
-        const maxLag  = Math.floor(frameRate * 60 / minBPM);
+        const minLag = Math.floor(frameRate * 60 / maxBPM);
+        const maxLag = Math.floor(frameRate * 60 / minBPM);
 
         let bestLag = minLag;
         let bestCorr = -Infinity;
-        const n = Math.min(envelope.length, maxLag * 4); 
+        const n = Math.min(envelope.length, maxLag * 4);
 
         for (let lag = minLag; lag <= maxLag; lag++) {
             let corr = 0;
@@ -1194,12 +1196,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    
+
     btnMenu.addEventListener('click', () => modalOverlay.classList.add('active'));
     btnCloseModal.addEventListener('click', () => modalOverlay.classList.remove('active'));
     modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.classList.remove('active'); });
 
-    
+
     btnAddSong.addEventListener('click', () => {
         promptInput.value = '';
         promptOverlay.classList.add('active');
@@ -1230,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     promptInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitPrompt(); });
     promptOverlay.addEventListener('click', (e) => { if (e.target === promptOverlay) promptOverlay.classList.remove('active'); });
 
-    
+
     const renderSongList = () => {
         songList.innerHTML = '';
         songs.forEach((song, i) => {
@@ -1264,7 +1266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyDotColors();
     };
 
-    
+
     Object.keys(fileInputs).forEach(track => {
         fileInputs[track].addEventListener('change', async (e) => {
             if (currentMenuSongIndex === -1) { e.target.value = ''; return; }
@@ -1279,13 +1281,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const arrayBuffer = await file.arrayBuffer();
                 const tempCtx = getAudioContext() || new (window.AudioContext || window.webkitAudioContext)();
                 const decoded = await tempCtx.decodeAudioData(arrayBuffer);
-                
+
                 songs[targetSongIdx].buffers[track] = decoded;
                 songs[targetSongIdx].reversedBuffers[track] = reverseBuffer(decoded, tempCtx);
-                
+
                 fileLabels[track].textContent = file.name;
 
-                
+
                 if (targetSongIdx === playingSongIndex) {
                     loadSongToPlayer(playingSongIndex);
                 }
