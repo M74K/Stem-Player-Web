@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stem Player Prototpye</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+    <div class="player-container">
+        <div class="stem-player" id="stem-player">
+            <div class="center-play-area" id="center-play-area"></div>
+
+            <div class="groove groove-vertical groove-top" data-track="vocal">
+                <div class="dot orange" data-index="3"></div>
+                <div class="dot red" data-index="2"></div>
+                <div class="dot pink" data-index="1"></div>
+                <div class="dot purple" data-index="0"></div>
+            </div>
+            
+            <div class="groove groove-horizontal groove-right" data-track="drums">
+                <div class="dot purple" data-index="0"></div>
+                <div class="dot pink" data-index="1"></div>
+                <div class="dot red" data-index="2"></div>
+                <div class="dot orange" data-index="3"></div>
+            </div>
+            
+            <div class="groove groove-vertical groove-bottom" data-track="bass">
+                <div class="dot purple" data-index="0"></div>
+                <div class="dot pink" data-index="1"></div>
+                <div class="dot red" data-index="2"></div>
+                <div class="dot orange" data-index="3"></div>
+            </div>
+            
+            <div class="groove groove-horizontal groove-left" data-track="music">
+                <div class="dot orange" data-index="3"></div>
+                <div class="dot red" data-index="2"></div>
+                <div class="dot pink" data-index="1"></div>
+                <div class="dot purple" data-index="0"></div>
+            </div>
+        </div>
+
+        <div class="player-controls">
+            <div class="song-title" id="current-song-title">No song selected</div>
+            <div class="progress-container">
+                <span id="time-current">0:00</span>
+                <div class="progress-bar-bg" id="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                </div>
+                <span id="time-total">0:00</span>
+            </div>
+            <div class="playback-buttons">
+                <button id="btn-prev" class="control-btn">⏮</button>
+                <button id="btn-play" class="control-btn play-btn">▶</button>
+                <button id="btn-next" class="control-btn">⏭</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="icon-btn icon-left" id="btn-menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+    </button>
+    <a href="https://github.com/M74K/Stem-Player-Web" target="_blank" class="icon-btn icon-right">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+    </a>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" id="btn-close-modal">×</button>
+            <div class="modal-layout">
+                <div class="modal-sidebar">
+                    <div class="sidebar-header">
+                        <h2>Songs</h2>
+                        <button id="btn-add-song" class="add-btn">+</button>
+                    </div>
+                    <ul class="song-list" id="song-list">
+                    </ul>
+                </div>
+                <div class="modal-main">
+                    <h2>Samples</h2>
+                    <div class="samples-list" id="samples-list">
+                        <div class="sample-row">
+                            <label>DRUMS:</label>
+                            <label class="custom-file-upload">
+                                <input type="file" id="file-drums" accept="audio/*">
+                                <span class="file-name" id="label-drums">Choose file</span>
+                            </label>
+                        </div>
+                        <div class="sample-row">
+                            <label>VOCAL:</label>
+                            <label class="custom-file-upload">
+                                <input type="file" id="file-vocal" accept="audio/*">
+                                <span class="file-name" id="label-vocal">Choose file</span>
+                            </label>
+                        </div>
+                        <div class="sample-row">
+                            <label>MUSIC:</label>
+                            <label class="custom-file-upload">
+                                <input type="file" id="file-music" accept="audio/*">
+                                <span class="file-name" id="label-music">Choose file</span>
+                            </label>
+                        </div>
+                        <div class="sample-row">
+                            <label>BASS:</label>
+                            <label class="custom-file-upload">
+                                <input type="file" id="file-bass" accept="audio/*">
+                                <span class="file-name" id="label-bass">Choose file</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="supported-formats">
+                <b>Supported audio formats include wav, flac, mp3, AAC & more.</b>
+            </div>
+        </div>
+    </div>
+
+    <div class="prompt-overlay" id="prompt-overlay">
+        <div class="prompt-box">
+            <button class="modal-close" id="btn-close-prompt">×</button>
+            <h3>Write the title of the song</h3>
+            <input type="text" id="prompt-input" placeholder="Song">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
