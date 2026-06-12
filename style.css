@@ -6,13 +6,12 @@ body {
     align-items: center;
     min-height: 100vh;
     background-color: #ffffff;
-    /* Полностью белый фон по запросу */
     font-family: sans-serif;
 }
 
 .stem-player {
-    width: 360px;
-    height: 360px;
+    width: min(90vw, 360px);
+    height: min(90vw, 360px);
     background: url('StemPlayerPNG (1).png') center/cover no-repeat;
     background-color: transparent;
     position: relative;
@@ -24,7 +23,7 @@ body {
     border-radius: 20px;
     display: flex;
     justify-content: center;
-    gap: 8px; /* Уменьшаем расстояние между точками на ~10% */
+    gap: 8px;
     align-items: center;
     box-shadow: none;
     padding: 4px;
@@ -48,58 +47,23 @@ body {
     flex-direction: row;
 }
 
-/* Позиционирование углублений */
-.groove-top {
-    top: 10px;
-}
-
-.groove-bottom {
-    bottom: 10px;
-}
-
-.groove-left {
-    left: 10px;
-}
-
-.groove-right {
-    right: 10px;
-}
+.groove-top    { top: 10px; }
+.groove-bottom { bottom: 10px; }
+.groove-left   { left: 10px; }
+.groove-right  { right: 10px; }
 
 .dot {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    transition: all 0.3s ease;
+    transition: background-color 0.4s ease, box-shadow 0.4s ease, opacity 0.3s ease;
     filter: blur(2px);
-    /* Добавляем размытие самой точке */
     pointer-events: none;
-    /* Чтобы клик/свайп шел по groove, а не по точке */
 }
 
 .dot.off {
-    background-color: transparent !important;
+    opacity: 0;
     box-shadow: none !important;
-}
-
-
-.purple {
-    background-color: #a855f7;
-    box-shadow: 0 0 24px 8px rgba(168, 85, 247, 0.8);
-}
-
-.pink {
-    background-color: #ec4899;
-    box-shadow: 0 0 24px 8px rgba(236, 72, 153, 0.8);
-}
-
-.red {
-    background-color: #ef4444;
-    box-shadow: 0 0 24px 8px rgba(239, 68, 68, 0.8);
-}
-
-.orange {
-    background-color: #f97316;
-    box-shadow: 0 0 24px 8px rgba(249, 115, 22, 0.8);
 }
 
 
@@ -114,7 +78,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     font-weight: 700;
     color: #000;
 }
@@ -122,6 +86,14 @@ body {
 .song-title {
     font-size: 16px;
     letter-spacing: 0.5px;
+}
+
+.song-bpm {
+    font-size: 11px;
+    font-weight: 500;
+    color: #999;
+    letter-spacing: 1px;
+    min-height: 16px;
 }
 
 .progress-container {
@@ -192,25 +164,15 @@ body {
     transition: opacity 0.2s;
 }
 
-.icon-btn:hover {
-    opacity: 0.6;
-}
-
-.icon-left {
-    left: 30px;
-}
-
-.icon-right {
-    right: 30px;
-}
+.icon-btn:hover { opacity: 0.6; }
+.icon-left  { left: 30px; }
+.icon-right { right: 30px; }
 
 
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
@@ -228,16 +190,20 @@ body {
 
 .modal-content {
     background: #fff;
-    width: 700px;
-    height: 400px;
+    width: 940px;
+    max-width: 95vw;
+    height: 75vh;
+    max-height: 620px;
+    min-height: 420px;
     border-radius: 20px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    padding: 30px;
+    padding: 35px;
     position: relative;
     transform: scale(0.95);
     transition: transform 0.3s ease;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .modal-overlay.active .modal-content {
@@ -259,13 +225,18 @@ body {
     display: flex;
     margin-top: 20px;
     height: 100%;
-    gap: 40px;
+    gap: 30px;
+    overflow: hidden;
 }
 
+
 .modal-sidebar {
-    flex: 1;
+    flex: 0 0 180px;
     border-right: 1px solid #eee;
     padding-right: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-header {
@@ -273,6 +244,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    flex-shrink: 0;
 }
 
 .sidebar-header h2 {
@@ -293,17 +265,13 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 280px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
-.song-list::-webkit-scrollbar {
-    width: 6px;
-}
-.song-list::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
-}
+.song-list::-webkit-scrollbar { width: 6px; }
+.song-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
 .song-list li {
     padding: 8px 12px;
@@ -311,34 +279,59 @@ body {
     cursor: pointer;
     border-radius: 8px;
     transition: background 0.2s;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.song-list li:hover {
-    background: #f5f5f5;
-}
+.song-list li:hover { background: #f5f5f5; }
+.song-list li.active { background: #e0e0e0; font-weight: 600; }
 
-.song-list li.active {
-    background: #e0e0e0;
-    font-weight: 600;
-}
 
 .modal-main {
-    flex: 2;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    min-width: 0;
+    overflow-y: auto;
 }
 
-.modal-main h2 {
+.modal-main-top {
+    display: flex;
+    gap: 30px;
+    flex: 1;
+}
+
+.modal-samples-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.modal-settings-section {
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-left: 1px solid #eee;
+    padding-left: 28px;
+}
+
+.modal-samples-section h2,
+.modal-settings-section h2 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
 }
 
+
 .samples-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
 }
 
 .sample-row {
@@ -347,17 +340,17 @@ body {
     gap: 10px;
 }
 
-.sample-row > label {
-    width: 80px;
+.sample-track-label {
+    width: 65px;
+    flex-shrink: 0;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
 }
-
 
 .custom-file-upload {
     flex: 1;
     background: #f0f0f0;
-    padding: 8px 12px;
+    padding: 7px 12px;
     border-radius: 8px;
     font-size: 12px;
     color: #666;
@@ -366,30 +359,154 @@ body {
     align-items: center;
     justify-content: center;
     transition: background 0.2s;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.custom-file-upload:hover {
-    background: #e0e0e0;
+.custom-file-upload:hover { background: #e0e0e0; }
+.custom-file-upload input[type="file"] { display: none; }
+
+
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.custom-file-upload input[type="file"] {
-    display: none;
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
+
+.setting-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.setting-divider {
+    height: 1px;
+    background: #eee;
+    margin: 2px 0;
+}
+
+
+.bpm-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 5px 10px;
+}
+
+#bpm-value {
+    font-size: 14px;
+    font-weight: 700;
+    min-width: 28px;
+    text-align: center;
+}
+
+.detect-bpm-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #555;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, color 0.2s;
+}
+
+.detect-bpm-btn:hover { color: #000; }
+.detect-bpm-btn.spinning svg {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+
+.color-pickers {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.color-picker-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.color-picker-label {
+    font-size: 12px;
+    color: #555;
+}
+
+.color-swatch-wrap {
+    position: relative;
+}
+
+.color-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: block;
+    cursor: pointer;
+    border: 2px solid rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.color-swatch:hover {
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
+}
+
+
+.color-gradient-preview {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+}
+
+.gradient-dot-preview {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    filter: blur(1px);
+}
+
 
 .supported-formats {
-    margin-top: 30px;
+    margin-top: 20px;
     text-align: center;
     font-size: 10px;
     color: #666666;
+    flex-shrink: 0;
 }
 
 
 .prompt-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
@@ -452,4 +569,153 @@ body {
     transform: translate(-50%, -50%);
     cursor: pointer;
     z-index: 10;
+}
+
+
+.physical-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin: 10px 0 20px 0;
+}
+
+.physical-btn {
+    background: #e6e4df;
+    border: none;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #666;
+    padding: 8px 18px;
+    cursor: pointer;
+    box-shadow: inset 1px 1px 2px rgba(255,255,255,0.8),
+                inset -1px -1px 2px rgba(0,0,0,0.1),
+                2px 2px 5px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.5px;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+.physical-btn:hover {
+    color: #333;
+    box-shadow: inset 1px 1px 2px rgba(255,255,255,0.8),
+                inset -1px -1px 2px rgba(0,0,0,0.15),
+                1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.physical-btn:active, .physical-btn.active {
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2),
+                inset -1px -1px 2px rgba(255,255,255,0.5);
+    transform: translateY(1px);
+}
+
+.physical-btn.loop-btn.active {
+    background: #fef08a !important; 
+    color: #a16207 !important; 
+    box-shadow: inset 2px 2px 4px rgba(202, 138, 4, 0.3),
+                0 0 10px rgba(234, 179, 8, 0.4) !important;
+}
+
+.physical-btn-group {
+    display: flex;
+    background: #e6e4df;
+    border-radius: 12px;
+    box-shadow: inset 1px 1px 2px rgba(255,255,255,0.8),
+                inset -1px -1px 2px rgba(0,0,0,0.1),
+                2px 2px 5px rgba(0,0,0,0.15);
+    overflow: hidden;
+    align-items: center;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+.btn-side {
+    background: none;
+    border: none;
+    cursor: pointer;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #666;
+    padding: 0 16px;
+    transition: all 0.2s ease;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.btn-side:hover {
+    color: #333;
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.btn-side:active {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.divider-line {
+    width: 1px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+}
+
+.circle-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 2.5px solid #666;
+    box-sizing: border-box;
+    display: inline-block;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-side:hover .circle-indicator {
+    border-color: #333;
+    background-color: #333;
+}
+
+
+.dot.volume-active {
+    background-color: #3b82f6 !important;
+    box-shadow: 0 0 24px 8px rgba(59, 130, 246, 0.9) !important;
+    opacity: 1 !important;
+    transition: background-color 0s, box-shadow 0s, opacity 0.3s ease !important;
+}
+
+.dot.loop-active {
+    background-color: #eab308 !important;
+    box-shadow: 0 0 24px 8px rgba(234, 179, 8, 0.9) !important;
+}
+
+
+.player-container.volume-indicator-active .groove-horizontal .dot {
+    opacity: 0 !important;
+    box-shadow: none !important;
+}
+.player-container.volume-indicator-active .groove-vertical .dot:not(.volume-active) {
+    opacity: 0 !important;
+    box-shadow: none !important;
+}
+
+
+.player-container.solo-active .groove:not(.solo-target) .dot {
+    opacity: 0 !important;
+    box-shadow: none !important;
+}
+
+
+.dot.playback-pointer {
+    background-color: #ffffff !important;
+    box-shadow: 0 0 20px 6px rgba(255, 255, 255, 0.95), 0 0 4px 1px #ffffff !important;
+    opacity: 1 !important;
+    filter: blur(0.5px) !important;
 }
