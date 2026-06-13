@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let loopModeInitialSpeed = 1.0;
     let loopModeInitialReverse = false;
     let loopModeInitialLoopActive = false;
+    let loopModeInitialLoopLengthBeats = 8;
 
 
     let savedLoopSpeed = 1.0;
@@ -57,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initAudioContext = () => {
         if (audioCtx) return;
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        masterGainNode = audioCtx.createGain();
+            masterGainNode = audioCtx.createGain();
         masterGainNode.gain.setValueAtTime(masterVolume, audioCtx.currentTime);
         masterGainNode.connect(audioCtx.destination);
 
@@ -206,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const getLoopLengthSeconds = (beatsSec) => {
-        return loopLengthBeats * beatsSec;
+        return loopLengthBeats;
     };
 
     const getSpeedFromIndex = (index) => {
@@ -263,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return Math.sqrt(sum / bufferLength);
     };
 
-    const startSources = (offset) => {
+    const startSources = (offset, tapeStart = false) => {
         initAudioContext();
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
@@ -300,8 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (startOffset < 0) startOffset = 0;
             if (startOffset > bufferDuration) startOffset = bufferDuration;
 
-            source.playbackRate.value = currentSpeed;
-
             if (isLoopActive) {
                 source.loop = true;
                 const song = songs[playingSongIndex];
@@ -325,18 +324,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            if (tapeStart) {
+                source.playbackRate.setValueAtTime(0.01, audioCtx.currentTime);
+                source.playbackRate.linearRampToValueAtTime(currentSpeed, audioCtx.currentTime + 0.5);
+            } else {
+                source.playbackRate.value = currentSpeed;
+            }
+
             source.start(0, startOffset);
             t.source = source;
         });
     };
 
-    const stopSources = () => {
+    const stopSources = (fade = false) => {
         updateCurrentPosition();
         Object.keys(tracks).forEach(name => {
             const t = tracks[name];
             if (t.source) {
-                try { t.source.stop(); } catch (e) { }
-                t.source = null;
+                try {
+                    if (fade) {
+                        const stopTime = audioCtx.currentTime + 0.5;
+                        t.source.playbackRate.cancelScheduledValues(audioCtx.currentTime);
+                        t.source.playbackRate.setValueAtTime(t.source.playbackRate.value, audioCtx.currentTime);
+                        t.source.playbackRate.linearRampToValueAtTime(0.01, stopTime);
+                        t.source.stop(stopTime);
+                    } else {
+                        t.source.stop();
+                    }
+                } catch (e) { }
+                
+                if (fade) {
+                    const s = t.source;
+                    setTimeout(() => {
+                        if (t.source === s) {
+                            t.source = null;
+                        }
+                    }, 500);
+                } else {
+                    t.source = null;
+                }
             }
         });
     };
@@ -478,16 +504,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         let activeVerticalDots = 8;
+        let lStart = 0;
         if (isLoopActive) {
-            if (loopLengthBeats === 0.25) activeVerticalDots = 1;
-            else if (loopLengthBeats === 0.5) activeVerticalDots = 2;
-            else if (loopLengthBeats === 1) activeVerticalDots = 3;
-            else if (loopLengthBeats === 2) activeVerticalDots = 4;
-            else if (loopLengthBeats === 4) activeVerticalDots = 5;
-            else if (loopLengthBeats === 8) activeVerticalDots = 6;
-            else if (loopLengthBeats === 16) activeVerticalDots = 7;
+            if (loopLengthBeats === 1) activeVerticalDots = 1;
+            else if (loopLengthBeats === 2) activeVerticalDots = 2;
+            else if (loopLengthBeats === 3) activeVerticalDots = 3;
+            else if (loopLengthBeats === 4) activeVerticalDots = 4;
+            else if (loopLengthBeats === 5) activeVerticalDots = 5;
+            else if (loopLengthBeats === 6) activeVerticalDots = 6;
+            else if (loopLengthBeats === 7) activeVerticalDots = 7;
+            else activeVerticalDots = 8;
         } else {
             activeVerticalDots = 8;
+        }
+
+        const duration = getSongDuration();
+        const pos = getCurrentPlaybackPosition();
+        let loopPhase = 0;
+        if (isLoopActive && duration > 0) {
+            const song = songs[playingSongIndex];
+            const bpm = (song && song.bpm) ? song.bpm : 120;
+            const beatsSec = 60 / bpm;
+            const loopLen = getLoopLengthSeconds(beatsSec);
+            lStart = loopStartTime;
+            if (lStart + loopLen > duration) {
+                lStart = Math.max(0, duration - loopLen);
+            }
+            if (loopLen > 0) {
+                loopPhase = ((pos - lStart) / loopLen) % 1;
+                if (loopPhase < 0) loopPhase += 1;
+            }
         }
 
         const verticalDots = getVerticalDotsBottomToTop();
@@ -499,6 +545,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 dot.classList.add('off');
             }
         });
+
+        if (isLoopActive && activeVerticalDots <= 7) {
+            const verticalPointerIndex = Math.min(activeVerticalDots - 1, Math.floor(Math.abs(pos - lStart)) % activeVerticalDots);
+            if (verticalDots[verticalPointerIndex]) {
+                verticalDots[verticalPointerIndex].classList.add('vertical-playback-pointer');
+            }
+        }
 
 
         const rightGroove = document.querySelector('.groove-right');
@@ -575,29 +628,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const updateVolume = (e) => {
             if (!isLoopMode) {
-                const dots = Array.from(groove.querySelectorAll('.dot'));
-                let minDistance = Infinity;
-                let closestIndex = -1;
-
-                dots.forEach(dot => {
-                    const rect = dot.getBoundingClientRect();
-                    const cx = rect.left + rect.width / 2;
-                    const cy = rect.top + rect.height / 2;
-                    const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        closestIndex = parseInt(dot.getAttribute('data-index'));
+                const isVolActive = playerContainer.classList.contains('volume-indicator-active');
+                if (isVolActive && (trackName === 'vocal' || trackName === 'bass')) {
+                    const closestVerticalIdx = getClosestVerticalDotIndex(e);
+                    if (closestVerticalIdx !== -1) {
+                        masterVolume = (closestVerticalIdx + 1) / 8;
+                        initAudioContext();
+                        if (masterGainNode) {
+                            masterGainNode.gain.setValueAtTime(masterVolume, audioCtx.currentTime);
+                        }
+                        applyGains();
+                        showVolumeIndicator();
                     }
-                });
+                } else {
+                    const dots = Array.from(groove.querySelectorAll('.dot'));
+                    let minDistance = Infinity;
+                    let closestIndex = -1;
 
-                if (closestIndex !== -1) {
                     dots.forEach(dot => {
-                        const idx = parseInt(dot.getAttribute('data-index'));
-                        if (idx <= closestIndex) dot.classList.remove('off');
-                        else dot.classList.add('off');
+                        const rect = dot.getBoundingClientRect();
+                        const cx = rect.left + rect.width / 2;
+                        const cy = rect.top + rect.height / 2;
+                        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            closestIndex = parseInt(dot.getAttribute('data-index'));
+                        }
                     });
-                    tracks[trackName].volume = closestIndex / 3;
-                    applyGains();
+
+                    if (closestIndex !== -1) {
+                        dots.forEach(dot => {
+                            const idx = parseInt(dot.getAttribute('data-index'));
+                            if (idx <= closestIndex) dot.classList.remove('off');
+                            else dot.classList.add('off');
+                        });
+                        tracks[trackName].volume = closestIndex / 3;
+                        applyGains();
+                    }
                 }
             } else {
 
@@ -651,25 +718,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     const closestVerticalIdx = getClosestVerticalDotIndex(e);
                     if (closestVerticalIdx !== -1) {
                         if (closestVerticalIdx === 0) {
-                            loopLengthBeats = 0.25;
-                            isLoopActive = true;
-                        } else if (closestVerticalIdx === 1) {
-                            loopLengthBeats = 0.5;
-                            isLoopActive = true;
-                        } else if (closestVerticalIdx === 2) {
                             loopLengthBeats = 1;
                             isLoopActive = true;
-                        } else if (closestVerticalIdx === 3) {
+                        } else if (closestVerticalIdx === 1) {
                             loopLengthBeats = 2;
                             isLoopActive = true;
-                        } else if (closestVerticalIdx === 4) {
+                        } else if (closestVerticalIdx === 2) {
+                            loopLengthBeats = 3;
+                            isLoopActive = true;
+                        } else if (closestVerticalIdx === 3) {
                             loopLengthBeats = 4;
                             isLoopActive = true;
+                        } else if (closestVerticalIdx === 4) {
+                            loopLengthBeats = 5;
+                            isLoopActive = true;
                         } else if (closestVerticalIdx === 5) {
-                            loopLengthBeats = 8;
+                            loopLengthBeats = 6;
                             isLoopActive = true;
                         } else if (closestVerticalIdx === 6) {
-                            loopLengthBeats = 16;
+                            loopLengthBeats = 7;
                             isLoopActive = true;
                         } else {
                             loopLengthBeats = 8;
@@ -697,12 +764,15 @@ document.addEventListener('DOMContentLoaded', () => {
             groove.setPointerCapture(e.pointerId);
 
             if (!isLoopMode) {
-                soloTimeout = setTimeout(() => {
-                    soloTrack = trackName;
-                    playerContainer.classList.add('solo-active');
-                    groove.classList.add('solo-target');
-                    applyGains();
-                }, 1000);
+                const isVolActive = playerContainer.classList.contains('volume-indicator-active');
+                if (!isVolActive || (trackName !== 'vocal' && trackName !== 'bass')) {
+                    soloTimeout = setTimeout(() => {
+                        soloTrack = trackName;
+                        playerContainer.classList.add('solo-active');
+                        groove.classList.add('solo-target');
+                        applyGains();
+                    }, 1000);
+                }
             }
 
             updateVolume(e);
@@ -777,13 +847,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (playingSongIndex === -1) return;
         isPlaying = true;
         btnPlay.textContent = '⏸';
-        startSources(currentPosition);
+        startSources(currentPosition, true);
     };
 
     const pauseAll = () => {
         if (!isPlaying) return;
         btnPlay.textContent = '▶';
-        stopSources();
+        stopSources(true);
         isPlaying = false;
     };
 
@@ -795,9 +865,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const hasChanges = (currentSpeed !== loopModeInitialSpeed) ||
                 (isReverse !== loopModeInitialReverse) ||
-                (isLoopActive !== loopModeInitialLoopActive);
+                (isLoopActive !== loopModeInitialLoopActive) ||
+                (loopLengthBeats !== loopModeInitialLoopLengthBeats);
 
-            if (!hasChanges) {
+            const isDefault = (currentSpeed === 1.0) &&
+                (isReverse === false) &&
+                (isLoopActive === false) &&
+                (loopLengthBeats === 8);
+
+            if (!hasChanges && isDefault) {
 
                 isLoopMode = false;
                 btnLoopMode.classList.remove('active');
@@ -840,6 +916,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loopModeInitialSpeed = 1.0;
                 loopModeInitialReverse = false;
                 loopModeInitialLoopActive = false;
+                loopModeInitialLoopLengthBeats = 8;
 
                 const curPos = getCurrentPlaybackPosition();
                 if (isPlaying) {
@@ -928,6 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loopModeInitialSpeed = savedLoopSpeed;
             loopModeInitialReverse = savedLoopReverse;
             loopModeInitialLoopActive = savedLoopActive;
+            loopModeInitialLoopLengthBeats = savedLoopLengthBeats;
 
             scannerPhase = 0;
             loopStartTime = getCurrentPlaybackPosition();
@@ -1077,12 +1155,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     dot.classList.remove('playback-pointer');
                     dot.style.filter = '';
                 });
+                document.querySelectorAll('.dot.vertical-playback-pointer').forEach(dot => {
+                    dot.classList.remove('vertical-playback-pointer');
+                    dot.style.filter = '';
+                });
 
                 const pointerIndex = Math.min(7, Math.floor(scannerPhase * 8));
                 const horizontalDots = getHorizontalDotsLeftToRight();
                 if (horizontalDots[pointerIndex]) {
                     horizontalDots[pointerIndex].classList.add('playback-pointer');
                 }
+                renderGroovesInLoopMode();
             }
 
             if (!isLoopActive && pos >= duration && isPlaying) {

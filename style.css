@@ -719,3 +719,10 @@ body {
     opacity: 1 !important;
     filter: blur(0.5px) !important;
 }
+
+.dot.vertical-playback-pointer {
+    background-color: #fef08a !important;
+    box-shadow: 0 0 20px 6px rgba(254, 240, 138, 0.95), 0 0 4px 1px #fef08a !important;
+    opacity: 1 !important;
+    filter: blur(0.5px) !important;
+}
